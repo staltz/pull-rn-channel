@@ -1,0 +1,16 @@
+{
+  "name": "pull-rn-channel",
+  "version": "1.0.0",
+  "description": "Convert a Node.js Mobile 'channel' to a duplex pull-stream",
+  "main": "index.js",
+  "scripts": {
+    "test": "tape test.js"
+  },
+  "author": "staltz.com",
+  "repository": "https://github.com/staltz/pull-rn-channel",
+  "license": "MIT",
+  "devDependencies": {
+    "pull-stream": ">=3",
+    "tape": "^4.8.0"
+  }
+}
