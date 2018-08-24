@@ -48,7 +48,7 @@ module.exports = function toDuplex(channel) {
           default:
             (console.warn | console.log)(
               'pull-rn-channel cannot recognize message',
-              msg,
+              msg
             );
             break;
         }
@@ -67,7 +67,7 @@ module.exports = function toDuplex(channel) {
     channel.on('message', onMsg);
   } else {
     throw new Error(
-      'pull-rn-channel cannot call neither `on` nor `addListener`',
+      'pull-rn-channel cannot call neither `on` nor `addListener`'
     );
   }
 
