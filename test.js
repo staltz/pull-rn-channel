@@ -20,9 +20,9 @@ test('works as source pull-stream', function(t) {
 test('works as a sink pull-stream', function(t) {
   t.plan(4);
   var expected = [
-    {type: 'data', data: 10},
-    {type: 'data', data: 20},
-    {type: 'data', data: 30},
+    {type: 'data', format: 'json', data: 10},
+    {type: 'data', format: 'json', data: 20},
+    {type: 'data', format: 'json', data: 30},
     {type: 'end'},
   ];
   var sinkChannel = mock.sink(function(x) {

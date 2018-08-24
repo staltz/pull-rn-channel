@@ -26,7 +26,11 @@ module.exports = function toDuplex(channel) {
         msg = JSON.parse(buffer.shift());
         switch (msg.type) {
           case 'data':
-            cb(null, msg.data);
+            if (msg.format === 'buffer') {
+              cb(null, Buffer.from(msg.data, 'base64'));
+            } else {
+              cb(null, msg.data);
+            }
             break;
 
           case 'error':
@@ -95,7 +99,9 @@ module.exports = function toDuplex(channel) {
         isSending = false;
         close();
       } else {
-        channel.send(JSON.stringify({type: 'data', data: data}));
+        const send = Buffer.isBuffer(data) ? data.toString('base64') : data;
+        const format = Buffer.isBuffer(data) ? 'buffer' : 'json';
+        channel.send(JSON.stringify({type: 'data', format, data: send}));
         read(null, next);
       }
     });
