@@ -95,7 +95,7 @@ module.exports = function toDuplex(channel) {
         isSending = false;
         close();
       } else if (end) {
-        channel.send(JSON.stringify({type: 'error', data: errOrEnd}));
+        channel.send(JSON.stringify({type: 'error', data: end}));
         isSending = false;
         close();
       } else {
