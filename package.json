@@ -12,5 +12,8 @@
   "devDependencies": {
     "pull-stream": ">=3",
     "tape": "^4.8.0"
+  },
+  "dependencies": {
+    "quick-insert": "^1.0.0"
   }
 }

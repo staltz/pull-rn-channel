@@ -1,7 +1,11 @@
+var quickInsert = require('quick-insert');
+
 module.exports = function toDuplex(channel) {
   var buffer = [];
   var cbs = [];
   var isReceiving = false;
+  var outSeq = 0;
+  var waitingForInSeq = 1;
   var isSending = false;
 
   function close() {
@@ -20,44 +24,47 @@ module.exports = function toDuplex(channel) {
 
   function consumeReads() {
     var cb, msg;
-    while (buffer.length && cbs.length) {
+    while (buffer.length && cbs.length && buffer[0].seq === waitingForInSeq) {
+      msg = buffer.shift();
       cb = cbs.shift();
-      if (buffer.length) {
-        msg = JSON.parse(buffer.shift());
-        switch (msg.type) {
-          case 'data':
-            if (msg.format === 'buffer') {
-              cb(null, Buffer.from(msg.data, 'base64'));
-            } else {
-              cb(null, msg.data);
-            }
-            break;
+      waitingForInSeq += 1;
+      switch (msg.type) {
+        case 'data':
+          if (msg.format === 'buffer') {
+            cb(null, Buffer.from(msg.data, 'base64'));
+          } else {
+            cb(null, msg.data);
+          }
+          break;
 
-          case 'error':
-            cb(msg.data);
-            isReceiving = false;
-            close();
-            return;
+        case 'error':
+          cb(msg.data);
+          isReceiving = false;
+          close();
+          return;
 
-          case 'end':
-            cb(true);
-            isReceiving = false;
-            close();
-            return;
+        case 'end':
+          cb(true);
+          isReceiving = false;
+          close();
+          return;
 
-          default:
-            (console.warn | console.log)(
-              'pull-rn-channel cannot recognize message',
-              msg
-            );
-            break;
-        }
+        default:
+          (console.warn | console.log)(
+            'pull-rn-channel cannot recognize message',
+            msg
+          );
+          break;
       }
     }
   }
 
   function onMsg(raw) {
-    buffer.push(raw);
+    const msg = JSON.parse(raw);
+    quickInsert(msg, buffer, function(m1, m2) {
+      if (m1.seq === m2.seq) return 0;
+      return m1.seq < m2.seq ? -1 : 1;
+    });
     consumeReads();
   }
 
@@ -90,18 +97,20 @@ module.exports = function toDuplex(channel) {
   function write(read) {
     isSending = true;
     read(null, function next(end, data) {
+      outSeq += 1;
       if (end === true) {
-        channel.send(JSON.stringify({type: 'end'}));
+        channel.send(JSON.stringify({type: 'end', seq: outSeq}));
         isSending = false;
         close();
       } else if (end) {
-        channel.send(JSON.stringify({type: 'error', data: end}));
+        channel.send(JSON.stringify({type: 'error', data: end, seq: outSeq}));
         isSending = false;
         close();
       } else {
         const send = Buffer.isBuffer(data) ? data.toString('base64') : data;
         const format = Buffer.isBuffer(data) ? 'buffer' : 'json';
-        channel.send(JSON.stringify({type: 'data', format, data: send}));
+        const payload = {type: 'data', format, data: send, seq: outSeq};
+        channel.send(JSON.stringify(payload));
         read(null, next);
       }
     });
